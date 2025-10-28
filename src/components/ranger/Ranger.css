@@ -1,0 +1,352 @@
+/* Styles pour le composant Ranger */
+
+.ranger-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #2a2a2a;
+  color: #ffffff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.ranger-header {
+  padding: 23px;
+  background-color: #2d2d2d;
+  border-bottom: 1px solid #444;
+}
+
+.ranger-header h1 {
+  margin: 0 0 10px 0;
+  font-size: 24px;
+  color: #ffffff;
+}
+
+.range-stats {
+  display: flex;
+  gap: 20px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.ranger-content {
+  display: flex;
+  flex: 1;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Grille des mains */
+.hands-grid {
+  display: grid;
+  grid-template-columns: repeat(13, 40px);
+  grid-template-rows: repeat(13, 40px);
+  gap: 1px;
+  padding: 15px;
+  background-color: #2a2a2a;
+  width: fit-content;
+  overflow: auto;
+}
+
+.hand-cell {
+  margin: 1px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.15s ease;
+  border: none;
+  background-color: #3a3a3a;
+}
+
+.hand-cell:hover {
+  background-color: #4a4a4a;
+  color: #ffffff;
+}
+
+/* Panneau des actions */
+.actions-panel {
+  width: 320px;
+  background-color: #2a2a2a;
+  border-left: 1px solid #444;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.actions-panel h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 18px;
+}
+
+.actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: #3a3a3a;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  position: relative;
+  border: 1px solid #444;
+}
+
+.action-item:hover {
+  background-color: #444;
+}
+
+.action-item.active {
+  background-color: #4a4a4a;
+  border: 2px solid #ffffff;
+}
+
+.action-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid #666;
+  flex-shrink: 0;
+}
+
+.action-name {
+  flex: 1;
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.action-radio {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #666;
+  background-color: transparent;
+  cursor: pointer;
+  position: relative;
+}
+
+.action-radio.selected {
+  border-color: #ffffff;
+  background-color: #ffffff;
+}
+
+.action-radio.selected::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #2a2a2a;
+}
+
+.action-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.action-item:hover .action-controls {
+  opacity: 1;
+}
+
+.action-drag {
+  color: #888;
+  cursor: grab;
+  font-size: 12px;
+}
+
+.action-drag:hover {
+  color: #ffffff;
+}
+
+.action-delete {
+  background: none;
+  border: none;
+  color: #ff4444;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.action-delete:hover {
+  background-color: #ff4444;
+  color: #ffffff;
+}
+
+/* Formulaire d'ajout d'action */
+.add-action-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 15px;
+  background-color: #333;
+  border-radius: 6px;
+}
+
+.action-name-input {
+  padding: 10px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background-color: #444;
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.action-name-input:focus {
+  outline: none;
+  border-color: #ffffff;
+}
+
+.color-picker {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.color-option {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.color-option:hover {
+  transform: scale(1.1);
+}
+
+.color-option.selected {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-primary, .btn-secondary {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary {
+  background-color: #2A2AA7;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: #2525a0;
+}
+
+.btn-secondary {
+  background-color: #666;
+  color: #ffffff;
+}
+
+.btn-secondary:hover {
+  background-color: #777;
+}
+
+.btn-add-action {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: #3a3a3a;
+  color: #ffffff;
+  border: 1px solid #555;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-add-action:hover {
+  background-color: #4a4a4a;
+  border-color: #666;
+}
+
+
+/* États de chargement et d'erreur */
+.loading, .error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  font-size: 18px;
+  color: #ffffff;
+}
+
+.error {
+  color: #ff4444;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .ranger-content {
+    flex-direction: column;
+  }
+  
+  .actions-panel {
+    width: 100%;
+  }
+  
+  .hands-grid {
+    max-width: 100%;
+  }
+}

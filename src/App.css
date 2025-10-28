@@ -1,0 +1,72 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.App {
+  min-height: 100vh;
+  background-color: #2a2a2a;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #ffffff;
+}
+
+.replayer-container {
+  position: relative;
+  background-color: #2a2a2a;
+}
+
+.back-button {
+  display: inline-block;
+  margin: 0 auto 20px;
+  padding: 12px 24px;
+  background-color: #3a3a3a;
+  color: white;
+  border: 1px solid #555;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  max-width: 300px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.back-button:hover {
+  background-color: #4a4a4a;
+  border-color: #666;
+  transform: translateY(-1px);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.replayer-container {
+  animation: fadeIn 0.5s ease;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .poker-table {
+    transform: scale(0.8);
+  }
+}
+
+@media (max-width: 600px) {
+  .poker-table {
+    transform: scale(0.6);
+  }
+}

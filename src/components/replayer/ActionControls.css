@@ -1,0 +1,249 @@
+.action-controls-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 25px;
+  background-color: #2d2d2d;
+  border-radius: 12px;
+  border: 1px solid #444;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.hand-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 5px;
+  gap: 15px;
+}
+
+.hand-counter {
+  background-color: #3a3a3a;
+  padding: 12px 30px;
+  border-radius: 8px;
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  border: 1px solid #555;
+}
+
+.action-counter {
+  background-color: #3a3a3a;
+  padding: 10px 25px;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid #555;
+}
+
+.nav-button {
+  padding: 12px 24px;
+  background-color: #3a3a3a;
+  color: white;
+  border: 1px solid #555;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.nav-button:hover:not(:disabled) {
+  background-color: #4a4a4a;
+  border-color: #666;
+  transform: translateY(-1px);
+}
+
+.nav-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background-color: #333;
+}
+
+.current-action-display {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.action-street {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2A2AA7;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.action-text {
+  font-size: 18px;
+  color: #ffffff;
+}
+
+.action-player {
+  font-weight: 700;
+  color: #f39c12;
+}
+
+.action-detail {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.action-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 15px;
+}
+
+.action-nav {
+  flex: 1;
+  max-width: 100px;
+}
+
+.action-timeline {
+  margin-top: 20px;
+}
+
+.timeline-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #3a3a3a;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #555;
+}
+
+.timeline-progress {
+  height: 100%;
+  background: linear-gradient(90deg, #2A2AA7 0%, #2525a0 100%);
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px rgba(42, 42, 167, 0.5);
+}
+
+.keyboard-shortcuts {
+  margin-top: 8px;
+  opacity: 0.8;
+}
+
+.keyboard-shortcuts small {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.hand-display {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.hand-display:hover {
+  background-color: #3a3a3a;
+  transform: scale(1.02);
+}
+
+.hand-input-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hand-input {
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+  background-color: #3a3a3a;
+  border: 1px solid #555;
+}
+
+.hand-input:focus {
+  outline: none;
+  border-color: #2A2AA7;
+}
+
+.hand-input-suffix {
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+/* Styles pour le bouton toggle BB */
+.bb-toggle-container {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0;
+}
+
+.bb-toggle-button {
+  background-color: #3a3a3a;
+  color: white;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 50px;
+  text-align: center;
+}
+
+.bb-toggle-button:hover {
+  background-color: #4a4a4a;
+  border-color: #666;
+  transform: translateY(-1px);
+}
+
+.bb-toggle-button.active {
+  background-color: #2A2AA7;
+  border-color: #2A2AA7;
+}
+
+.bb-toggle-button.active:hover {
+  background-color: #2525a0;
+  border-color: #2525a0;
+}
+
+/* Styles pour les boutons de retour */
+.back-button,
+.back-to-list-button {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  padding: 10px 20px;
+  background-color: #3a3a3a;
+  color: white;
+  border: 1px solid #555;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.back-button:hover,
+.back-to-list-button:hover {
+  background-color: #4a4a4a;
+  border-color: #666;
+  transform: translateY(-1px);
+}
+
+.importer-wrapper {
+  position: relative;
+}
+
+.replay-page {
+  position: relative;
+}
+
+.replayer-container {
+  position: relative;
+  padding-top: 60px;
+}
+

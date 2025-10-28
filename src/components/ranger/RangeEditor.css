@@ -1,0 +1,26 @@
+/* Styles pour l'éditeur de ranges principal */
+
+.range-editor {
+  display: flex;
+  height: calc(100vh - 60px);
+  background-color: #2a2a2a;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.editor-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .range-editor {
+    flex-direction: column;
+  }
+  
+  .editor-content {
+    height: calc(100vh - 200px);
+  }
+}

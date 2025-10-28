@@ -1,0 +1,304 @@
+/* Styles pour le gestionnaire de fichiers */
+
+.file-manager {
+  width: 300px;
+  background-color: #2d2d2d;
+  border-right: 1px solid #444;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.file-manager-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  background-color: #333;
+  border-bottom: 1px solid #444;
+}
+
+.file-manager-header h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 18px;
+}
+
+.add-root-btn {
+  background: none;
+  border: none;
+  color: #2A2AA7;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.add-root-btn:hover {
+  background-color: #444;
+}
+
+.ranges-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 0;
+}
+
+.range-item {
+  margin-bottom: 2px;
+}
+
+.range-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.range-row:hover {
+  background-color: #444;
+}
+
+.range-row.selected {
+  background-color: #555;
+  border-right: 3px solid #2A2AA7;
+}
+
+.folder-toggle {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 5px;
+  margin-right: 5px;
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.folder-toggle:hover {
+  background-color: #666;
+}
+
+.folder-spacer {
+  width: 20px;
+}
+
+.item-icon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+.range-name, .folder-name {
+  flex: 1;
+  color: #ffffff;
+  font-size: 14px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.range-name:hover {
+  background-color: #555;
+}
+
+.folder-name {
+  font-weight: 500;
+}
+
+.range-actions {
+  display: flex;
+  gap: 5px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.range-row:hover .range-actions {
+  opacity: 1;
+}
+
+.action-btn {
+  color: white;
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.edit-btn:hover {
+  background-color: #2196F3;
+}
+
+.add-btn:hover {
+  background-color: #2A2AA7;
+}
+
+.copy-btn:hover {
+  background-color: #FF9800;
+}
+
+.delete-btn:hover {
+  background-color: #f44336;
+}
+
+.sub-ranges {
+  margin-left: 10px;
+}
+
+.edit-input {
+  background-color: #444;
+  border: 1px solid #666;
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 14px;
+  flex: 1;
+  margin-right: 10px;
+}
+
+.edit-input:focus {
+  outline: none;
+  border-color: #2A2AA7;
+}
+
+/* Formulaire d'ajout */
+.add-range-form {
+  padding: 15px;
+  background-color: #333;
+  border-top: 1px solid #444;
+}
+
+.form-type-selector {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 12px;
+}
+
+.form-type-selector label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.form-type-selector input[type="radio"] {
+  cursor: pointer;
+  accent-color: #2A2AA7;
+}
+
+.add-input {
+  width: 100%;
+  background-color: #444;
+  border: 1px solid #666;
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.add-input:focus {
+  outline: none;
+  border-color: #2A2AA7;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-save, .btn-cancel {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.btn-save {
+  background-color: #2A2AA7;
+  color: #ffffff;
+}
+
+.btn-save:hover {
+  background-color: #2525a0;
+}
+
+.btn-cancel {
+  background-color: #666;
+  color: #ffffff;
+}
+
+.btn-cancel:hover {
+  background-color: #777;
+}
+
+/* Section d'importation */
+.import-section {
+  padding: 15px;
+  border-top: 1px solid #444;
+}
+
+.import-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #2196F3;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.import-btn:hover {
+  background-color: #1976D2;
+}
+
+/* Scrollbar personnalisée */
+.ranges-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ranges-list::-webkit-scrollbar-track {
+  background: #333;
+}
+
+.ranges-list::-webkit-scrollbar-thumb {
+  background: #666;
+  border-radius: 3px;
+}
+
+.ranges-list::-webkit-scrollbar-thumb:hover {
+  background: #888;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .file-manager {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid #444;
+  }
+  
+  .ranges-list {
+    max-height: 200px;
+  }
+}
