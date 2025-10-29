@@ -50,6 +50,14 @@ export class HandHistoryParser {
       this.processLine(line.trim(), hand);
     });
 
+    // Appliquer le bouton si stocké pendant le parsing
+    if ((hand as any).buttonSeat !== undefined) {
+      const buttonSeat = (hand as any).buttonSeat;
+      const dealer = hand.players.find(p => p.seat === buttonSeat);
+      if (dealer) dealer.isDealer = true;
+      delete (hand as any).buttonSeat;
+    }
+
     // Réorganiser les joueurs pour que le hero soit toujours en premier
     hand.players = this.reorderPlayersWithHeroFirst(hand.players);
 
@@ -156,7 +164,8 @@ export class HandHistoryParser {
       return true;
     }
     
-    if (line.includes('€') || line.includes('$') || line.includes('Blinds')) {
+    // NE PAS capturer les lignes qui commencent par "Seat" (ce sont des joueurs)
+    if (!line.startsWith('Seat ') && (line.includes('€') || line.includes('$') || line.includes('Blinds'))) {
       // Ne pas écraser les stakes si déjà définis (depuis le buyIn)
       if (!hand.stakes) {
         hand.stakes = line;
@@ -166,6 +175,17 @@ export class HandHistoryParser {
     
     if (line.includes('Table') || line.includes('table')) {
       hand.tableInfo = line;
+      
+      // Si la ligne contient aussi les infos du bouton, les parser également
+      if (line.includes('Seat #') && line.includes('is the button')) {
+        const buttonMatch = line.match(/Seat #(\d+) is the button/);
+        if (buttonMatch) {
+          const buttonSeat = parseInt(buttonMatch[1]);
+          // On stocke le numéro du bouton pour le traiter plus tard quand les joueurs seront parsés
+          (hand as any).buttonSeat = buttonSeat;
+        }
+      }
+      
       return true;
     }
     
@@ -184,14 +204,23 @@ export class HandHistoryParser {
     if (!seatMatch) return false;
 
     const playerInfo = seatMatch[3];
-    const chipsBountyMatch = playerInfo.match(/^(.+?),\s*(.+?\s+bounty)$/);
+    
+    // Amélioration : détecter le format bounty de manière plus flexible
+    // Format possible: "500, 0.45€ bounty" ou "500, 0.45€ de prime" etc.
+    const chipsBountyMatch = playerInfo.match(/^(.+?),\s*(.+?bounty.*?)$/i);
     
     let chips = playerInfo;
     let bounty: string | undefined;
     
     if (chipsBountyMatch) {
       chips = chipsBountyMatch[1].trim();
-      bounty = chipsBountyMatch[2].trim();
+      const bountyText = chipsBountyMatch[2].trim();
+      
+      // Extraire uniquement le montant du bounty (avec la devise)
+      const bountyAmountMatch = bountyText.match(/([\d.]+\s*[€$£])/);
+      if (bountyAmountMatch) {
+        bounty = bountyAmountMatch[1].trim();
+      }
     }
     
     hand.players.push({

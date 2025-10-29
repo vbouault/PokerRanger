@@ -36,10 +36,17 @@ export const Player: React.FC<PlayerProps> = ({
   if (hasFolded) {
     return (
       <div className={`player player-${position} folded ${isWinner ? 'winner' : ''}`}>
+        {player.isDealer && (
+          <div className="dealer-button">D</div>
+        )}
         <div className="player-info">
+          {player.bounty && (
+            <div className="bounty-badge">
+              {player.bounty}
+            </div>
+          )}
           <div className="player-name">
             {player.name}
-            {player.isDealer && <span className="dealer-button">D</span>}
           </div>
           <div className="player-chips">{formatChipsValue(player.chips)}</div>
         </div>
@@ -54,6 +61,10 @@ export const Player: React.FC<PlayerProps> = ({
 
   return (
     <div className={`player player-${position} ${isActive ? 'active' : ''} ${isWinner ? 'winner' : ''}`}>
+      {player.isDealer && (
+        <div className="dealer-button">D</div>
+      )}
+      
       {/* Afficher les vraies cartes si on les connaît, sinon cartes de dos si actif */}
       {(isActive || showCards) && (
         <div className="player-cards">
@@ -80,9 +91,13 @@ export const Player: React.FC<PlayerProps> = ({
       )}
 
       <div className="player-info">
+        {player.bounty && (
+          <div className="bounty-badge">
+            {player.bounty}
+          </div>
+        )}
         <div className="player-name">
           {player.name}
-          {player.isDealer && <span className="dealer-button">D</span>}
         </div>
         <div className="player-chips">
           {isAllIn ? 'ALL IN' : formatChipsValue(player.chips)}
