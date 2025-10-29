@@ -158,6 +158,50 @@ export const useRangeManager = () => {
     }
   }, [loadHierarchy]);
 
+  // Déplacer un dossier vers un nouveau parent
+  const moveFolderToParent = useCallback(async (folderId: number, newParentId: number | null) => {
+    try {
+      await databaseService.moveFolderToParent(folderId, newParentId);
+      await loadHierarchy(); // Recharger la hiérarchie
+    } catch (err) {
+      setError('Erreur lors du déplacement du dossier');
+      console.error(err);
+    }
+  }, [loadHierarchy]);
+
+  // Déplacer une range vers un nouveau dossier
+  const moveRangeToFolder = useCallback(async (rangeId: number, newFolderId: number | null) => {
+    try {
+      await databaseService.moveRangeToFolder(rangeId, newFolderId);
+      await loadHierarchy(); // Recharger la hiérarchie
+    } catch (err) {
+      setError('Erreur lors du déplacement de la range');
+      console.error(err);
+    }
+  }, [loadHierarchy]);
+
+  // Réorganiser une range (changer sa position)
+  const reorderRange = useCallback(async (rangeId: number, targetRangeId: number, insertBefore: boolean) => {
+    try {
+      await databaseService.reorderRange(rangeId, targetRangeId, insertBefore);
+      await loadHierarchy(); // Recharger la hiérarchie
+    } catch (err) {
+      setError('Erreur lors de la réorganisation de la range');
+      console.error(err);
+    }
+  }, [loadHierarchy]);
+
+  // Réorganiser un dossier (changer sa position)
+  const reorderFolder = useCallback(async (folderId: number, targetFolderId: number, insertBefore: boolean) => {
+    try {
+      await databaseService.reorderFolder(folderId, targetFolderId, insertBefore);
+      await loadHierarchy(); // Recharger la hiérarchie
+    } catch (err) {
+      setError('Erreur lors de la réorganisation du dossier');
+      console.error(err);
+    }
+  }, [loadHierarchy]);
+
   // Créer une nouvelle action
   const createAction = useCallback(async (rangeId: number, name: string, color: string) => {
     try {
@@ -269,6 +313,8 @@ export const useRangeManager = () => {
     updateFolder,
     deleteFolder,
     duplicateFolder,
+    moveFolderToParent,
+    reorderFolder,
     
     // Actions - Ranges
     selectRange,
@@ -276,6 +322,8 @@ export const useRangeManager = () => {
     updateRange,
     deleteRange,
     duplicateRange,
+    moveRangeToFolder,
+    reorderRange,
     
     // Actions - Actions
     createAction,

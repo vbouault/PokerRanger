@@ -26,10 +26,14 @@ const FileManager: React.FC<FileManagerProps> = ({
     updateFolder,
     deleteFolder,
     duplicateFolder,
+    moveFolderToParent,
+    reorderFolder,
     createRange,
     updateRange,
     deleteRange,
-    duplicateRange
+    duplicateRange,
+    moveRangeToFolder,
+    reorderRange
   } = useRangeManager();
   const [editingItem, setEditingItem] = useState<{ id: number; type: ItemType } | null>(null);
   const [editingName, setEditingName] = useState('');
@@ -37,6 +41,9 @@ const FileManager: React.FC<FileManagerProps> = ({
   const [newItemName, setNewItemName] = useState('');
   const [newItemType, setNewItemType] = useState<ItemType>('folder');
   const [parentFolderId, setParentFolderId] = useState<number | undefined>(undefined);
+  const [draggedItem, setDraggedItem] = useState<{ id: number; type: ItemType } | null>(null);
+  const [dragOverItem, setDragOverItem] = useState<{ id: number; type: ItemType } | null>(null);
+  const [insertBefore, setInsertBefore] = useState<boolean>(false);
 
   const toggleFolder = (folderId: number) => {
     const newExpanded = new Set(expandedFolders);
@@ -96,15 +103,143 @@ const FileManager: React.FC<FileManagerProps> = ({
     }
   };
 
+  // Gestion du drag and drop
+  const handleDragStart = (e: React.DragEvent, id: number, type: ItemType) => {
+    setDraggedItem({ id, type });
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: number, type: ItemType) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    
+    if (draggedItem && (draggedItem.id !== id || draggedItem.type !== type)) {
+      setDragOverItem({ id, type });
+      
+      // Déterminer si on insère avant ou après en fonction de la position de la souris
+      const rect = e.currentTarget.getBoundingClientRect();
+      const mouseY = e.clientY - rect.top;
+      const elementHeight = rect.height;
+      
+      // Si la souris est dans la moitié supérieure, insérer avant, sinon après
+      setInsertBefore(mouseY < elementHeight / 2);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverItem(null);
+    setInsertBefore(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetId: number | null, targetType: ItemType | null) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedItem) return;
+
+    // Si on dépose sur la racine (targetId === null)
+    if (targetId === null) {
+      if (draggedItem.type === 'range') {
+        await moveRangeToFolder(draggedItem.id, null);
+      } else if (draggedItem.type === 'folder') {
+        await moveFolderToParent(draggedItem.id, null);
+      }
+      setDraggedItem(null);
+      setDragOverItem(null);
+      setInsertBefore(false);
+      return;
+    }
+
+    // Empêcher de déplacer un élément sur lui-même
+    if (draggedItem.id === targetId && draggedItem.type === targetType) {
+      setDraggedItem(null);
+      setDragOverItem(null);
+      setInsertBefore(false);
+      return;
+    }
+
+    // Logique pour les ranges
+    if (draggedItem.type === 'range') {
+      if (targetType === 'range') {
+        // Réorganiser : déplacer la range avant ou après la cible
+        await reorderRange(draggedItem.id, targetId, insertBefore);
+      } else if (targetType === 'folder') {
+        // Déplacer vers un dossier
+        await moveRangeToFolder(draggedItem.id, targetId);
+      }
+    }
+    // Logique pour les dossiers
+    else if (draggedItem.type === 'folder') {
+      if (targetType === 'folder') {
+        // Vérifier si c'est une réorganisation ou un déplacement
+        // On considère que c'est une réorganisation si le modifier key est pressé
+        // ou on peut utiliser un indicateur visuel
+        // Pour simplifier, on va utiliser la distance : si très proche = réorganisation
+        
+        // Pour l'instant, toujours considérer comme réorganisation
+        // Empêcher de déplacer un dossier dans lui-même ou dans ses enfants
+        if (!isFolderDescendant(draggedItem.id, targetId)) {
+          await reorderFolder(draggedItem.id, targetId, insertBefore);
+        }
+      }
+    }
+
+    setDraggedItem(null);
+    setDragOverItem(null);
+    setInsertBefore(false);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDragOverItem(null);
+  };
+
+  // Vérifier si targetFolderId est un descendant de folderId
+  const isFolderDescendant = (folderId: number, targetFolderId: number): boolean => {
+    const findFolder = (folders: Folder[], id: number): Folder | null => {
+      for (const folder of folders) {
+        if (folder.id === id) return folder;
+        if (folder.folders) {
+          const found = findFolder(folder.folders, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const checkDescendant = (folder: Folder, targetId: number): boolean => {
+      if (folder.id === targetId) return true;
+      if (folder.folders) {
+        return folder.folders.some(f => checkDescendant(f, targetId));
+      }
+      return false;
+    };
+
+    const folder = findFolder(hierarchy, folderId);
+    if (!folder) return false;
+    return checkDescendant(folder, targetFolderId);
+  };
+
   const renderRange = (range: Range, level: number = 0) => {
     const isEditing = editingItem?.id === range.id && editingItem.type === 'range';
     const isSelected = currentRange?.id === range.id;
+    const isDragging = draggedItem?.id === range.id && draggedItem.type === 'range';
+    const isDragOver = dragOverItem?.id === range.id && dragOverItem.type === 'range';
+    const showInsertBefore = isDragOver && insertBefore;
+    const showInsertAfter = isDragOver && !insertBefore;
 
     return (
       <div key={`range-${range.id}`} className="range-item">
         <div
-          className={`range-row ${isSelected ? 'selected' : ''}`}
+          className={`range-row ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''} ${showInsertBefore ? 'insert-before' : ''} ${showInsertAfter ? 'insert-after' : ''}`}
           style={{ paddingLeft: `${level * 20 + 10}px` }}
+          draggable={!isEditing}
+          onDragStart={(e) => handleDragStart(e, range.id, 'range')}
+          onDragOver={(e) => handleDragOver(e, range.id, 'range')}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, range.id, 'range')}
+          onDragEnd={handleDragEnd}
         >
           <div className="folder-spacer" />
           <span className="item-icon">
@@ -167,12 +302,23 @@ const FileManager: React.FC<FileManagerProps> = ({
     const hasContent = (folder.folders && folder.folders.length > 0) || (folder.ranges && folder.ranges.length > 0);
     const isExpanded = expandedFolders.has(folder.id);
     const isEditing = editingItem?.id === folder.id && editingItem.type === 'folder';
+    const isDragging = draggedItem?.id === folder.id && draggedItem.type === 'folder';
+    const isDragOver = dragOverItem?.id === folder.id && dragOverItem.type === 'folder';
+    const showInsertBefore = isDragOver && draggedItem?.type === 'folder' && insertBefore;
+    const showInsertAfter = isDragOver && draggedItem?.type === 'folder' && !insertBefore;
+    const showDropInto = isDragOver && draggedItem?.type === 'range';
 
     return (
       <div key={`folder-${folder.id}`} className="range-item">
         <div
-          className="range-row"
+          className={`range-row ${isDragging ? 'dragging' : ''} ${showInsertBefore ? 'insert-before' : ''} ${showInsertAfter ? 'insert-after' : ''} ${showDropInto ? 'drag-over' : ''}`}
           style={{ paddingLeft: `${level * 20 + 10}px` }}
+          draggable={!isEditing}
+          onDragStart={(e) => handleDragStart(e, folder.id, 'folder')}
+          onDragOver={(e) => handleDragOver(e, folder.id, 'folder')}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, folder.id, 'folder')}
+          onDragEnd={handleDragEnd}
         >
           {/* Icône de dossier */}
           {hasContent && (
@@ -271,7 +417,14 @@ const FileManager: React.FC<FileManagerProps> = ({
         </button>
       </div>
 
-      <div className="ranges-list">
+      <div 
+        className="ranges-list"
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        }}
+        onDrop={(e) => handleDrop(e, null, null)}
+      >
         {hierarchy.map(folder => renderFolder(folder))}
       </div>
 

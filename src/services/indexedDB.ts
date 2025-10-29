@@ -94,16 +94,24 @@ export class IndexedDBService {
       const transaction = this.db!.transaction(['folders'], 'readwrite');
       const store = transaction.objectStore('folders');
       
-      const folder = {
-        name,
-        parentId: parentId || null,
-        position: 0,
-        createdAt: new Date().toISOString()
-      };
+      // D'abord, récupérer tous les folders du même parent pour déterminer la position
+      const getAllRequest = store.getAll();
+      getAllRequest.onsuccess = () => {
+        const allFolders = getAllRequest.result;
+        const siblingsCount = allFolders.filter((f: any) => f.parentId === (parentId || null)).length;
+        
+        const folder = {
+          name,
+          parentId: parentId || null,
+          position: siblingsCount, // Position à la fin
+          createdAt: new Date().toISOString()
+        };
 
-      const request = store.add(folder);
-      request.onsuccess = () => resolve(request.result as number);
-      request.onerror = () => reject(request.error);
+        const request = store.add(folder);
+        request.onsuccess = () => resolve(request.result as number);
+        request.onerror = () => reject(request.error);
+      };
+      getAllRequest.onerror = () => reject(getAllRequest.error);
     });
   }
 
@@ -266,6 +274,27 @@ export class IndexedDBService {
       }
     });
 
+    // Trier tous les éléments par position
+    const sortByPosition = (items: any[]) => {
+      return items.sort((a, b) => a.position - b.position);
+    };
+
+    // Trier les roots
+    sortByPosition(roots);
+
+    // Trier récursivement les sous-dossiers et ranges
+    const sortFolderContents = (folder: Folder) => {
+      if (folder.folders && folder.folders.length > 0) {
+        sortByPosition(folder.folders);
+        folder.folders.forEach(sortFolderContents);
+      }
+      if (folder.ranges && folder.ranges.length > 0) {
+        sortByPosition(folder.ranges);
+      }
+    };
+
+    roots.forEach(sortFolderContents);
+
     return roots;
   }
 
@@ -276,16 +305,24 @@ export class IndexedDBService {
       const transaction = this.db!.transaction(['ranges'], 'readwrite');
       const store = transaction.objectStore('ranges');
       
-      const range = {
-        name,
-        folderId: folderId || null,
-        position: 0,
-        createdAt: new Date().toISOString()
-      };
+      // D'abord, récupérer toutes les ranges du même dossier pour déterminer la position
+      const getAllRequest = store.getAll();
+      getAllRequest.onsuccess = () => {
+        const allRanges = getAllRequest.result;
+        const siblingsCount = allRanges.filter((r: any) => r.folderId === (folderId || null)).length;
+        
+        const range = {
+          name,
+          folderId: folderId || null,
+          position: siblingsCount, // Position à la fin
+          createdAt: new Date().toISOString()
+        };
 
-      const request = store.add(range);
-      request.onsuccess = () => resolve(request.result as number);
-      request.onerror = () => reject(request.error);
+        const request = store.add(range);
+        request.onsuccess = () => resolve(request.result as number);
+        request.onerror = () => reject(request.error);
+      };
+      getAllRequest.onerror = () => reject(getAllRequest.error);
     });
   }
 
@@ -600,6 +637,182 @@ export class IndexedDBService {
         }
       };
       getRequest.onerror = () => reject(getRequest.error);
+    });
+  }
+
+  // Déplacer un dossier vers un nouveau parent
+  async moveFolderToParent(folderId: number, newParentId: number | null): Promise<void> {
+    if (!this.db) throw new Error('Base de données non initialisée');
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['folders'], 'readwrite');
+      const store = transaction.objectStore('folders');
+      
+      const getRequest = store.get(folderId);
+      getRequest.onsuccess = () => {
+        const folder = getRequest.result;
+        if (folder) {
+          folder.parentId = newParentId;
+          const putRequest = store.put(folder);
+          putRequest.onsuccess = () => resolve();
+          putRequest.onerror = () => reject(putRequest.error);
+        } else {
+          reject(new Error('Dossier non trouvé'));
+        }
+      };
+      getRequest.onerror = () => reject(getRequest.error);
+    });
+  }
+
+  // Déplacer une range vers un nouveau dossier
+  async moveRangeToFolder(rangeId: number, newFolderId: number | null): Promise<void> {
+    if (!this.db) throw new Error('Base de données non initialisée');
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['ranges'], 'readwrite');
+      const store = transaction.objectStore('ranges');
+      
+      const getRequest = store.get(rangeId);
+      getRequest.onsuccess = () => {
+        const range = getRequest.result;
+        if (range) {
+          range.folderId = newFolderId;
+          const putRequest = store.put(range);
+          putRequest.onsuccess = () => resolve();
+          putRequest.onerror = () => reject(putRequest.error);
+        } else {
+          reject(new Error('Range non trouvée'));
+        }
+      };
+      getRequest.onerror = () => reject(getRequest.error);
+    });
+  }
+
+  // Réorganiser une range à une position spécifique (avant ou après une autre range)
+  async reorderRange(rangeId: number, targetRangeId: number, insertBefore: boolean): Promise<void> {
+    if (!this.db) throw new Error('Base de données non initialisée');
+
+    return new Promise(async (resolve, reject) => {
+      try {
+        const transaction = this.db!.transaction(['ranges'], 'readwrite');
+        const store = transaction.objectStore('ranges');
+        
+        // Récupérer la range à déplacer et la cible
+        const rangeRequest = store.get(rangeId);
+        const targetRequest = store.get(targetRangeId);
+        
+        rangeRequest.onsuccess = () => {
+          targetRequest.onsuccess = async () => {
+            const range = rangeRequest.result;
+            const targetRange = targetRequest.result;
+            
+            if (!range || !targetRange) {
+              reject(new Error('Range non trouvée'));
+              return;
+            }
+
+            // Récupérer toutes les ranges du même dossier
+            const allRangesRequest = store.getAll();
+            allRangesRequest.onsuccess = () => {
+              const allRanges = allRangesRequest.result.filter(
+                r => r.folderId === targetRange.folderId && r.id !== rangeId
+              );
+              
+              // Trier par position
+              allRanges.sort((a, b) => a.position - b.position);
+              
+              // Trouver l'index de la cible
+              const targetIndex = allRanges.findIndex(r => r.id === targetRangeId);
+              const insertIndex = insertBefore ? targetIndex : targetIndex + 1;
+              
+              // Insérer la range à la nouvelle position
+              allRanges.splice(insertIndex, 0, range);
+              
+              // Mettre à jour les positions
+              const updateTransaction = this.db!.transaction(['ranges'], 'readwrite');
+              const updateStore = updateTransaction.objectStore('ranges');
+              
+              allRanges.forEach((r, index) => {
+                r.position = index;
+                r.folderId = targetRange.folderId; // S'assurer que le folderId est correct
+                updateStore.put(r);
+              });
+              
+              updateTransaction.oncomplete = () => resolve();
+              updateTransaction.onerror = () => reject(updateTransaction.error);
+            };
+            allRangesRequest.onerror = () => reject(allRangesRequest.error);
+          };
+          targetRequest.onerror = () => reject(targetRequest.error);
+        };
+        rangeRequest.onerror = () => reject(rangeRequest.error);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  // Réorganiser un dossier à une position spécifique (avant ou après un autre dossier)
+  async reorderFolder(folderId: number, targetFolderId: number, insertBefore: boolean): Promise<void> {
+    if (!this.db) throw new Error('Base de données non initialisée');
+
+    return new Promise(async (resolve, reject) => {
+      try {
+        const transaction = this.db!.transaction(['folders'], 'readwrite');
+        const store = transaction.objectStore('folders');
+        
+        // Récupérer le dossier à déplacer et la cible
+        const folderRequest = store.get(folderId);
+        const targetRequest = store.get(targetFolderId);
+        
+        folderRequest.onsuccess = () => {
+          targetRequest.onsuccess = async () => {
+            const folder = folderRequest.result;
+            const targetFolder = targetRequest.result;
+            
+            if (!folder || !targetFolder) {
+              reject(new Error('Dossier non trouvé'));
+              return;
+            }
+
+            // Récupérer tous les dossiers du même parent
+            const allFoldersRequest = store.getAll();
+            allFoldersRequest.onsuccess = () => {
+              const allFolders = allFoldersRequest.result.filter(
+                f => f.parentId === targetFolder.parentId && f.id !== folderId
+              );
+              
+              // Trier par position
+              allFolders.sort((a, b) => a.position - b.position);
+              
+              // Trouver l'index de la cible
+              const targetIndex = allFolders.findIndex(f => f.id === targetFolderId);
+              const insertIndex = insertBefore ? targetIndex : targetIndex + 1;
+              
+              // Insérer le dossier à la nouvelle position
+              allFolders.splice(insertIndex, 0, folder);
+              
+              // Mettre à jour les positions
+              const updateTransaction = this.db!.transaction(['folders'], 'readwrite');
+              const updateStore = updateTransaction.objectStore('folders');
+              
+              allFolders.forEach((f, index) => {
+                f.position = index;
+                f.parentId = targetFolder.parentId; // S'assurer que le parentId est correct
+                updateStore.put(f);
+              });
+              
+              updateTransaction.oncomplete = () => resolve();
+              updateTransaction.onerror = () => reject(updateTransaction.error);
+            };
+            allFoldersRequest.onerror = () => reject(allFoldersRequest.error);
+          };
+          targetRequest.onerror = () => reject(targetRequest.error);
+        };
+        folderRequest.onerror = () => reject(folderRequest.error);
+      } catch (err) {
+        reject(err);
+      }
     });
   }
 

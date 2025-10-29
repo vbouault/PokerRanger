@@ -54,9 +54,13 @@
   display: flex;
   align-items: center;
   padding: 8px 0;
-  cursor: pointer;
+  cursor: grab;
   transition: background-color 0.2s ease;
   position: relative;
+}
+
+.range-row:active {
+  cursor: grabbing;
 }
 
 .range-row:hover {
@@ -86,6 +90,27 @@
 
 .folder-spacer {
   width: 20px;
+}
+
+.range-row.dragging {
+  opacity: 0.5;
+  background-color: #555;
+  cursor: grabbing;
+}
+
+.range-row.drag-over {
+  background-color: #2A2AA7;
+  border-left: 3px solid #4a4aff;
+}
+
+.range-row.insert-before {
+  border-top: 2px solid #4a4aff;
+  background-color: rgba(42, 42, 167, 0.1);
+}
+
+.range-row.insert-after {
+  border-bottom: 2px solid #4a4aff;
+  background-color: rgba(42, 42, 167, 0.1);
 }
 
 .item-icon {

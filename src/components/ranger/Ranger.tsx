@@ -28,6 +28,7 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
   const [isAddingAction, setIsAddingAction] = useState(false);
   const [newActionName, setNewActionName] = useState('');
   const [newActionColor, setNewActionColor] = useState<string>(DEFAULT_COLORS[0]);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Synchroniser le range sélectionné depuis le gestionnaire de fichiers
   useEffect(() => {
@@ -35,6 +36,20 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
       selectRange(selectedRange);
     }
   }, [selectedRange, currentRange, selectRange]);
+
+  // Gérer le relâchement de la souris globalement
+  useEffect(() => {
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      window.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging]);
 
   if (isLoading) {
     return (
@@ -59,6 +74,18 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
     } else {
       // Assigner la main à l'action sélectionnée
       assignHandToAction(hand as any, selectedAction.id);
+    }
+  };
+
+  const handleHandMouseDown = (hand: string, e: React.MouseEvent) => {
+    e.preventDefault(); // Empêche la sélection de texte
+    setIsDragging(true);
+    handleHandClick(hand);
+  };
+
+  const handleHandMouseEnter = (hand: string) => {
+    if (isDragging) {
+      handleHandClick(hand);
     }
   };
 
@@ -105,9 +132,11 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
                     className={`hand-cell ${isSelected ? 'selected' : ''}`}
                     style={{
                       backgroundColor: handAction?.color || '#3a3a3a',
+                      userSelect: 'none',
                       // border: handAction ? `2px solid ${handAction.color}` : '1px solid #ccc'
                     }}
-                    onClick={() => handleHandClick(hand)}
+                    onMouseDown={(e) => handleHandMouseDown(hand, e)}
+                    onMouseEnter={() => handleHandMouseEnter(hand)}
                     title={handAction ? `${hand} - ${handAction.name}` : hand}
                   >
                     {hand}
