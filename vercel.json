@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "buildCommand": "npm run build",
   "installCommand": "npm install --legacy-peer-deps",
   "outputDirectory": "build",
