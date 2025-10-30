@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { databaseService } from '../services/indexedDB';
+import { databaseService } from '../services/databaseService';
 import { Folder, Range, Action, RangeHand, PokerHand, RangeStats } from '../types/range';
 
 export const useRangeManager = () => {
