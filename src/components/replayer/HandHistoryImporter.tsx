@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFolder, faFile, faSearch, faCircleCheck, faFloppyDisk, faPlay, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { HandHistoryParser } from '../../parsers/HandHistoryParser';
 import { Hand } from '../../types/poker';
-import { databaseService } from '../../services/indexedDB';
+import { databaseService } from '../../services/firestore';
 import './HandHistoryImporter.css';
 
 interface HandHistoryImporterProps {

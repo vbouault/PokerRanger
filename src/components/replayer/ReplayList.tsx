@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlay, faPencil, faTrash, faCheck, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { SavedReplay } from '../../types/poker';
-import { databaseService } from '../../services/indexedDB';
+import { databaseService } from '../../services/firestore';
 import './ReplayList.css';
 
 interface ReplayListProps {
