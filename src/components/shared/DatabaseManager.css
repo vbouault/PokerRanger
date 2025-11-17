@@ -1,0 +1,129 @@
+.database-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  flex-shrink: 0; /* Empêche le rétrécissement */
+  min-width: 0; /* Permet le truncate si nécessaire */
+}
+
+.db-manager-buttons {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.db-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+  background-color: #3a3a3a;
+}
+
+.db-btn:hover:not(:disabled) {
+  background-color: #4a4a4a;
+  transform: translateY(-1px);
+}
+
+.db-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.db-btn-export {
+  background-color: #2A2AA7;
+}
+
+.db-btn-export:hover:not(:disabled) {
+  background-color: #3A3AB7;
+}
+
+.db-btn-import {
+  background-color: #2A7A2A;
+}
+
+.db-btn-import:hover:not(:disabled) {
+  background-color: #3A8A3A;
+}
+
+.db-message {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  max-width: 300px;
+  text-align: right;
+  animation: slideIn 0.3s ease;
+}
+
+.db-message-success {
+  background-color: #2A7A2A;
+  color: white;
+}
+
+.db-message-error {
+  background-color: #7A2A2A;
+  color: white;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .database-manager {
+    align-items: flex-end; /* Garder à droite même sur mobile */
+    width: auto; /* Largeur automatique */
+  }
+
+  .db-manager-buttons {
+    flex-direction: row; /* Garder en ligne horizontale */
+    gap: 6px;
+  }
+
+  .db-btn {
+    width: auto; /* Largeur automatique basée sur le contenu */
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+
+  .db-message {
+    max-width: calc(100vw - 30px);
+    text-align: right;
+    font-size: 0.8rem;
+  }
+}
+
+/* Pour les très petits écrans */
+@media (max-width: 480px) {
+  .database-manager {
+    align-items: flex-end;
+  }
+
+  .db-manager-buttons {
+    gap: 4px;
+  }
+
+  .db-btn {
+    padding: 5px 8px;
+    font-size: 0.8rem;
+  }
+
+  .db-message {
+    max-width: calc(100vw - 20px);
+    font-size: 0.75rem;
+    padding: 6px 10px;
+  }
+}
+

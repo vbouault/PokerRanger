@@ -917,6 +917,273 @@ export class IndexedDBService {
       request.onerror = () => reject(request.error);
     });
   }
+
+  // ================== Méthodes pour l'export/import ==================
+
+  /**
+   * Exporte toutes les données de la base de données en JSON
+   */
+  async exportDatabase(): Promise<string> {
+    if (!this.db) throw new Error('Base de données non initialisée');
+
+    const exportData: {
+      version: number;
+      exportDate: string;
+      folders: any[];
+      ranges: any[];
+      actions: any[];
+      rangeHands: any[];
+      replays: any[];
+    } = {
+      version: this.version,
+      exportDate: new Date().toISOString(),
+      folders: [],
+      ranges: [],
+      actions: [],
+      rangeHands: [],
+      replays: []
+    };
+
+    // Exporter tous les stores
+    const folders = await this.getAllFolders();
+    exportData.folders = folders;
+
+    const ranges = await this.getAllRanges();
+    exportData.ranges = ranges;
+
+    // Exporter toutes les actions
+    const allActions = await new Promise<any[]>((resolve, reject) => {
+      const transaction = this.db!.transaction(['actions'], 'readonly');
+      const store = transaction.objectStore('actions');
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    exportData.actions = allActions;
+
+    // Exporter toutes les mains
+    const allRangeHands = await new Promise<any[]>((resolve, reject) => {
+      const transaction = this.db!.transaction(['rangeHands'], 'readonly');
+      const store = transaction.objectStore('rangeHands');
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    exportData.rangeHands = allRangeHands;
+
+    // Exporter tous les replays
+    const replays = await this.getAllReplays();
+    exportData.replays = replays;
+
+    return JSON.stringify(exportData, null, 2);
+  }
+
+  /**
+   * Importe des données JSON dans la base de données
+   * @param jsonData - Les données JSON à importer
+   * @param clearExisting - Si true, supprime toutes les données existantes avant l'import
+   */
+  async importDatabase(jsonData: string, clearExisting: boolean = false): Promise<void> {
+    if (!this.db) throw new Error('Base de données non initialisée');
+
+    let importData: {
+      version?: number;
+      exportDate?: string;
+      folders: any[];
+      ranges: any[];
+      actions: any[];
+      rangeHands: any[];
+      replays: any[];
+    };
+
+    try {
+      importData = JSON.parse(jsonData);
+    } catch (error) {
+      throw new Error('Format JSON invalide');
+    }
+
+    // Vérifier que les données nécessaires sont présentes
+    if (!importData.folders || !importData.ranges || !importData.actions || 
+        !importData.rangeHands || !importData.replays) {
+      throw new Error('Format de données invalide');
+    }
+
+    return new Promise(async (resolve, reject) => {
+      try {
+        // Si clearExisting est true, supprimer toutes les données existantes
+        if (clearExisting) {
+          await this.clearAllData();
+        }
+
+        // Créer un mapping des anciens IDs vers les nouveaux IDs pour les folders
+        const folderIdMapping = new Map<number, number>();
+
+        // Importer les folders (en préservant la hiérarchie)
+        const sortedFolders = [...importData.folders].sort((a, b) => {
+          // Importer d'abord les folders sans parent, puis leurs enfants
+          if (a.parentId === null && b.parentId !== null) return -1;
+          if (a.parentId !== null && b.parentId === null) return 1;
+          return 0;
+        });
+
+        for (const folder of sortedFolders) {
+          const oldId = folder.id;
+          const parentId = folder.parentId ? folderIdMapping.get(folder.parentId) : undefined;
+          const newId = await this.createFolder(folder.name, parentId);
+          
+          // Mettre à jour le folderIdMapping
+          folderIdMapping.set(oldId, newId);
+
+          // Mettre à jour la position si nécessaire
+          if (folder.position !== undefined) {
+            await this.updateFolderPosition(newId, folder.position);
+          }
+        }
+
+        // Créer un mapping des anciens IDs vers les nouveaux IDs pour les ranges
+        const rangeIdMapping = new Map<number, number>();
+
+        // Importer les ranges
+        for (const range of importData.ranges) {
+          const oldId = range.id;
+          const folderId = range.folderId ? folderIdMapping.get(range.folderId) : undefined;
+          const newId = await this.createRange(range.name, folderId);
+          rangeIdMapping.set(oldId, newId);
+
+          // Mettre à jour la position si nécessaire
+          if (range.position !== undefined) {
+            await this.updateRangePosition(newId, range.position);
+          }
+        }
+
+        // Créer un mapping des anciens IDs vers les nouveaux IDs pour les actions
+        const actionIdMapping = new Map<number, number>();
+
+        // Importer les actions
+        for (const action of importData.actions) {
+          const oldRangeId = rangeIdMapping.get(action.rangeId);
+          if (oldRangeId) {
+            const oldId = action.id;
+            const newId = await this.createAction(oldRangeId, action.name, action.color);
+            actionIdMapping.set(oldId, newId);
+          }
+        }
+
+        // Importer les mains
+        for (const rangeHand of importData.rangeHands) {
+          const newRangeId = rangeIdMapping.get(rangeHand.rangeId);
+          const newActionId = actionIdMapping.get(rangeHand.actionId);
+          if (newRangeId && newActionId) {
+            await this.setHandAction(newRangeId, rangeHand.hand, newActionId);
+          }
+        }
+
+        // Importer les replays
+        for (const replay of importData.replays) {
+          await this.createReplay({
+            label: replay.label,
+            hands: replay.hands,
+            createdAt: replay.createdAt,
+            handsCount: replay.handsCount || replay.hands?.length || 0,
+            stakes: replay.stakes
+          });
+        }
+
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * Supprime toutes les données de la base de données
+   */
+  private async clearAllData(): Promise<void> {
+    if (!this.db) throw new Error('Base de données non initialisée');
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(
+        ['folders', 'ranges', 'actions', 'rangeHands', 'replays'],
+        'readwrite'
+      );
+
+      // Supprimer tous les replays
+      const replaysStore = transaction.objectStore('replays');
+      replaysStore.clear();
+
+      // Supprimer toutes les mains
+      const rangeHandsStore = transaction.objectStore('rangeHands');
+      rangeHandsStore.clear();
+
+      // Supprimer toutes les actions
+      const actionsStore = transaction.objectStore('actions');
+      actionsStore.clear();
+
+      // Supprimer toutes les ranges
+      const rangesStore = transaction.objectStore('ranges');
+      rangesStore.clear();
+
+      // Supprimer tous les folders
+      const foldersStore = transaction.objectStore('folders');
+      foldersStore.clear();
+
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+  }
+
+  /**
+   * Met à jour la position d'un folder
+   */
+  private async updateFolderPosition(folderId: number, position: number): Promise<void> {
+    if (!this.db) throw new Error('Base de données non initialisée');
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['folders'], 'readwrite');
+      const store = transaction.objectStore('folders');
+      
+      const getRequest = store.get(folderId);
+      getRequest.onsuccess = () => {
+        const folder = getRequest.result;
+        if (folder) {
+          folder.position = position;
+          const putRequest = store.put(folder);
+          putRequest.onsuccess = () => resolve();
+          putRequest.onerror = () => reject(putRequest.error);
+        } else {
+          resolve(); // Si le folder n'existe pas, on ignore
+        }
+      };
+      getRequest.onerror = () => reject(getRequest.error);
+    });
+  }
+
+  /**
+   * Met à jour la position d'une range
+   */
+  private async updateRangePosition(rangeId: number, position: number): Promise<void> {
+    if (!this.db) throw new Error('Base de données non initialisée');
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['ranges'], 'readwrite');
+      const store = transaction.objectStore('ranges');
+      
+      const getRequest = store.get(rangeId);
+      getRequest.onsuccess = () => {
+        const range = getRequest.result;
+        if (range) {
+          range.position = position;
+          const putRequest = store.put(range);
+          putRequest.onsuccess = () => resolve();
+          putRequest.onerror = () => reject(putRequest.error);
+        } else {
+          resolve(); // Si la range n'existe pas, on ignore
+        }
+      };
+      getRequest.onerror = () => reject(getRequest.error);
+    });
+  }
 }
 
 // Instance singleton

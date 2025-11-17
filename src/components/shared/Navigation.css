@@ -17,6 +17,12 @@
   align-items: center;
   padding: 0 20px;
   height: 60px;
+  gap: 20px; /* Espace minimum entre brand et links */
+}
+
+.nav-brand {
+  flex-shrink: 0; /* Empêche le titre de rétrécir */
+  min-width: 0; /* Permet le truncate si nécessaire */
 }
 
 .nav-brand h2 {
@@ -24,11 +30,17 @@
   color: white;
   font-size: 1.5rem;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .nav-links {
   display: flex;
   gap: 10px;
+  align-items: center;
+  flex-shrink: 0; /* Empêche les liens de rétrécir */
+  min-width: 0; /* Permet le truncate si nécessaire */
 }
 
 .nav-link {
@@ -54,7 +66,15 @@
 @media (max-width: 768px) {
   .nav-container {
     padding: 0 15px;
-    height: 50px;
+    height: auto; /* Hauteur automatique pour s'adapter au contenu */
+    min-height: 50px;
+    flex-wrap: wrap; /* Permet le retour à la ligne si nécessaire */
+    gap: 10px;
+  }
+  
+  .nav-brand {
+    flex: 1 1 auto;
+    min-width: 120px; /* Largeur minimum pour le titre */
   }
   
   .nav-brand h2 {
@@ -62,11 +82,39 @@
   }
   
   .nav-links {
-    gap: 20px;
+    gap: 8px;
+    flex-wrap: wrap; /* Permet le retour à la ligne */
+    justify-content: flex-end;
   }
   
   .nav-link {
     font-size: 0.9rem;
     padding: 6px 12px;
+    white-space: nowrap;
+  }
+}
+
+/* Pour les très petits écrans */
+@media (max-width: 480px) {
+  .nav-container {
+    padding: 0 10px;
+    gap: 8px;
+  }
+  
+  .nav-brand {
+    min-width: 100px;
+  }
+  
+  .nav-brand h2 {
+    font-size: 1.1rem;
+  }
+  
+  .nav-links {
+    gap: 6px;
+  }
+  
+  .nav-link {
+    font-size: 0.85rem;
+    padding: 6px 10px;
   }
 }

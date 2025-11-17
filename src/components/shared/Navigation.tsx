@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import DatabaseManager from './DatabaseManager';
 import './Navigation.css';
 
 const Navigation: React.FC = () => {
@@ -24,6 +25,7 @@ const Navigation: React.FC = () => {
           >
             Replay
           </Link>
+          <DatabaseManager />
         </div>
       </div>
     </nav>
