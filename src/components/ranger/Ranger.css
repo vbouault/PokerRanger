@@ -48,7 +48,16 @@
   flex: 1;
   gap: 0;
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
+  min-width: 0;
+}
+
+.hands-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 15px;
+  overflow: visible;
 }
 
 /* Grille des mains */
@@ -57,10 +66,9 @@
   grid-template-columns: repeat(13, 40px);
   grid-template-rows: repeat(13, 40px);
   gap: 1px;
-  padding: 15px;
   background-color: #2a2a2a;
   width: fit-content;
-  overflow: auto;
+  overflow: visible;
 }
 
 .hand-cell {
@@ -108,6 +116,49 @@
   gap: 8px;
   max-height: 300px;
   overflow-y: auto;
+}
+
+.range-stats-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.action-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.action-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.action-stat-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.action-stat-text {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.total-stats-row {
+  padding-top: 8px;
+}
+
+.total-stats-value {
+  font-size: 13px;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .action-item {
@@ -195,8 +246,14 @@
   background-color: #777;
 }
 
-.action-name {
+.action-name-wrapper {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.action-name {
   color: #ffffff;
   font-weight: 500;
   font-size: 14px;
@@ -204,8 +261,14 @@
   user-select: none;
 }
 
+.action-stats {
+  color: #aaa;
+  font-size: 11px;
+  font-weight: 400;
+}
+
 .action-name-input-edit {
-  flex: 1;
+  width: 100%;
   padding: 4px 8px;
   border: 1px solid #ffffff;
   border-radius: 4px;

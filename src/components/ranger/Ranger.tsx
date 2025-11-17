@@ -217,6 +217,38 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
 
   const stats = getRangeStats();
 
+  // Fonction pour calculer le nombre de combos d'une main
+  const getHandCombos = (hand: string): number => {
+    // Paires (AA, KK, etc.) : 6 combos
+    if (hand.length === 2 && hand[0] === hand[1]) {
+      return 6;
+    }
+    // Suited (AKs, AQs, etc.) : 4 combos
+    if (hand.endsWith('s')) {
+      return 4;
+    }
+    // Offsuit (AKo, AQo, etc.) : 12 combos
+    if (hand.endsWith('o')) {
+      return 12;
+    }
+    return 0;
+  };
+
+  // Calculer les combos et pourcentage pour chaque action
+  const getActionStats = (actionId: number) => {
+    const actionHands = rangeHands.filter(rh => rh.actionId === actionId);
+    const totalCombos = actionHands.reduce((sum, rh) => sum + getHandCombos(rh.hand), 0);
+    const percentage = (totalCombos / 1326) * 100;
+    return { combos: totalCombos, percentage };
+  };
+
+  // Calculer le total des combos sélectionnés (toutes actions confondues)
+  const getTotalStats = () => {
+    const totalCombos = rangeHands.reduce((sum, rh) => sum + getHandCombos(rh.hand), 0);
+    const percentage = (totalCombos / 1326) * 100;
+    return { combos: totalCombos, percentage };
+  };
+
   return (
     <div className="ranger-container">
       <div className="ranger-header">
@@ -237,30 +269,66 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
 
       {currentRange && (
         <div className="ranger-content">
-          {/* Grille des mains */}
-          <div className="hands-grid">
-            {POKER_HANDS_GRID.map((row, rowIndex) => 
-              row.map((hand, colIndex) => {
-                const handAction = getHandAction(hand as any);
-                const isSelected = selectedAction?.id === handAction?.id;
-                
-                return (
-                  <div
-                    key={`${rowIndex}-${colIndex}`}
-                    className={`hand-cell ${isSelected ? 'selected' : ''}`}
-                    style={{
-                      backgroundColor: handAction?.color || '#3a3a3a',
-                      userSelect: 'none',
-                      // border: handAction ? `2px solid ${handAction.color}` : '1px solid #ccc'
-                    }}
-                    onMouseDown={(e) => handleHandMouseDown(hand, e)}
-                    onMouseEnter={() => handleHandMouseEnter(hand)}
-                    title={handAction ? `${hand} - ${handAction.name}` : hand}
-                  >
-                    {hand}
+          <div className="hands-section">
+            {/* Grille des mains */}
+            <div className="hands-grid">
+              {POKER_HANDS_GRID.map((row, rowIndex) => 
+                row.map((hand, colIndex) => {
+                  const handAction = getHandAction(hand as any);
+                  const isSelected = selectedAction?.id === handAction?.id;
+                  
+                  return (
+                    <div
+                      key={`${rowIndex}-${colIndex}`}
+                      className={`hand-cell ${isSelected ? 'selected' : ''}`}
+                      style={{
+                        backgroundColor: handAction?.color || '#3a3a3a',
+                        userSelect: 'none',
+                        // border: handAction ? `2px solid ${handAction.color}` : '1px solid #ccc'
+                      }}
+                      onMouseDown={(e) => handleHandMouseDown(hand, e)}
+                      onMouseEnter={() => handleHandMouseEnter(hand)}
+                      title={handAction ? `${hand} - ${handAction.name}` : hand}
+                    >
+                      {hand}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Statistiques des actions sous la grille */}
+            {currentRange && actions.length > 0 && (
+              <div className="range-stats-section">
+                <div className="action-stats-list">
+                  {actions.map((action) => {
+                    const actionStats = getActionStats(action.id);
+                    return (
+                      <div key={action.id} className="action-stat-item">
+                        <div
+                          className="action-stat-color"
+                          style={{ backgroundColor: action.color }}
+                        />
+                        <span className="action-stat-text">
+                          {actionStats.combos} / 1326 ({actionStats.percentage.toFixed(1)}%)
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {rangeHands.length > 0 && (
+                  <div className="total-stats-row">
+                    {(() => {
+                      const totalStats = getTotalStats();
+                      return (
+                        <div className="total-stats-value">
+                           {totalStats.combos} / 1326 ({totalStats.percentage.toFixed(1)}%)
+                        </div>
+                      );
+                    })()}
                   </div>
-                );
-              })
+                )}
+              </div>
             )}
           </div>
 
@@ -270,7 +338,9 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
             
             {/* Liste des actions existantes */}
             <div className="actions-list">
-              {actions.map((action) => (
+              {actions.map((action) => {
+                const actionStats = getActionStats(action.id);
+                return (
                 <div
                   key={action.id}
                   className={`action-item ${selectedAction?.id === action.id ? 'active' : ''}`}
@@ -339,34 +409,36 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
                       title="Cliquer pour modifier la couleur"
                     />
                   )}
-                  {editingActionId === action.id ? (
-                    <input
-                      type="text"
-                      value={editingActionName}
-                      onChange={(e) => setEditingActionName(e.target.value)}
-                      onBlur={() => handleSaveEditing(action.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleSaveEditing(action.id);
-                        } else if (e.key === 'Escape') {
-                          handleCancelEditing();
-                        }
-                      }}
-                      className="action-name-input-edit"
-                      autoFocus
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  ) : (
-                    <span 
-                      className="action-name"
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        handleStartEditing(action);
-                      }}
-                    >
-                      {action.name}
-                    </span>
-                  )}
+                  <div className="action-name-wrapper">
+                    {editingActionId === action.id ? (
+                      <input
+                        type="text"
+                        value={editingActionName}
+                        onChange={(e) => setEditingActionName(e.target.value)}
+                        onBlur={() => handleSaveEditing(action.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleSaveEditing(action.id);
+                          } else if (e.key === 'Escape') {
+                            handleCancelEditing();
+                          }
+                        }}
+                        className="action-name-input-edit"
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <span 
+                        className="action-name"
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
+                          handleStartEditing(action);
+                        }}
+                      >
+                        {action.name}
+                      </span>
+                    )}
+                  </div>
                   <div className="action-controls">
                     {/* <span className="action-drag">⋮⋮</span> */}
                     <button
@@ -389,8 +461,10 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
                     </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
+
 
             {/* Ajouter une nouvelle action */}
             {isAddingAction ? (
