@@ -94,7 +94,7 @@
 
 /* Panneau des actions */
 .actions-panel {
-  width: 350px;
+  width: 700px;
   background-color: #2a2a2a;
   border-left: 1px solid #444;
   display: flex;
@@ -110,12 +110,51 @@
   font-size: 18px;
 }
 
+.actions-content {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.actions-list-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .actions-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 300px;
+  max-height: calc(100vh - 250px);
   overflow-y: auto;
+  padding-right: 8px;
+}
+
+/* Scrollbar personnalisée pour la liste des actions */
+.actions-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.actions-list::-webkit-scrollbar-track {
+  background: #2a2a2a;
+  border-radius: 3px;
+}
+
+.actions-list::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 3px;
+}
+
+.actions-list::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+.actions-form-container {
+  width: 175px;
+  flex-shrink: 0;
 }
 
 .range-stats-section {
@@ -358,6 +397,7 @@
   padding: 15px;
   background-color: #333;
   border-radius: 6px;
+  height: fit-content;
 }
 
 .action-name-input {
@@ -447,6 +487,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  height: fit-content;
 }
 
 .btn-add-action:hover {
@@ -470,12 +511,34 @@
 }
 
 /* Responsive */
+@media (max-width: 1200px) {
+  .actions-panel {
+    width: 600px;
+  }
+
+  .actions-form-container {
+    width: 280px;
+  }
+}
+
 @media (max-width: 768px) {
   .ranger-content {
     flex-direction: column;
   }
   
   .actions-panel {
+    width: 100%;
+  }
+
+  .actions-content {
+    flex-direction: column;
+  }
+
+  .actions-list-container {
+    width: 100%;
+  }
+
+  .actions-form-container {
     width: 100%;
   }
   

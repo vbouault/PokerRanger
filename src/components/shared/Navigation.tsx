@@ -13,7 +13,7 @@ const Navigation: React.FC = () => {
           <h2>Poker Ranger</h2>
         </div>
         <div className="nav-links">
-          <Link 
+          {/* <Link 
             to="/" 
             className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}
           >
@@ -24,7 +24,7 @@ const Navigation: React.FC = () => {
             className={`nav-link ${location.pathname === '/replayer' ? 'active' : ''}`}
           >
             Replay
-          </Link>
+          </Link> */}
           <DatabaseManager />
         </div>
       </div>

@@ -336,8 +336,10 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
           <div className="actions-panel">
             <h3>Actions</h3>
             
-            {/* Liste des actions existantes */}
-            <div className="actions-list">
+            <div className="actions-content">
+              {/* Liste des actions existantes */}
+              <div className="actions-list-container">
+                <div className="actions-list">
               {actions.map((action) => {
                 const actionStats = getActionStats(action.id);
                 return (
@@ -463,11 +465,12 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
                 </div>
                 );
               })}
-            </div>
+                </div>
+              </div>
 
-
-            {/* Ajouter une nouvelle action */}
-            {isAddingAction ? (
+              {/* Ajouter une nouvelle action */}
+              <div className="actions-form-container">
+                {isAddingAction ? (
               <div className="add-action-form">
                 <input
                   type="text"
@@ -496,15 +499,16 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
                   </button>
                 </div>
               </div>
-            ) : (
-              <button
-                onClick={() => setIsAddingAction(true)}
-                className="btn-add-action"
-              >
-                + Ajouter une couleur
-              </button>
-            )}
-
+                ) : (
+                  <button
+                    onClick={() => setIsAddingAction(true)}
+                    className="btn-add-action"
+                  >
+                    + Ajouter une couleur
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
