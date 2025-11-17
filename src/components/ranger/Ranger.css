@@ -86,7 +86,7 @@
 
 /* Panneau des actions */
 .actions-panel {
-  width: 320px;
+  width: 350px;
   background-color: #2a2a2a;
   border-left: 1px solid #444;
   display: flex;
@@ -121,6 +121,7 @@
   transition: background-color 0.2s ease;
   position: relative;
   border: 1px solid #444;
+  flex-wrap: wrap;
 }
 
 .action-item:hover {
@@ -138,6 +139,60 @@
   border-radius: 3px;
   border: 1px solid #666;
   flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.action-color:hover {
+  transform: scale(1.2);
+  border-color: #888;
+}
+
+.action-color-editing {
+  background-color: #2a2a2a;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  min-width: 280px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.color-edit-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  justify-content: flex-end;
+}
+
+.btn-color-save,
+.btn-color-cancel {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.btn-color-save {
+  background-color: #2A2AA7;
+  color: #ffffff;
+}
+
+.btn-color-save:hover {
+  background-color: #2525a0;
+}
+
+.btn-color-cancel {
+  background-color: #666;
+  color: #ffffff;
+}
+
+.btn-color-cancel:hover {
+  background-color: #777;
 }
 
 .action-name {
@@ -145,6 +200,21 @@
   color: #ffffff;
   font-weight: 500;
   font-size: 14px;
+  cursor: text;
+  user-select: none;
+}
+
+.action-name-input-edit {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid #ffffff;
+  border-radius: 4px;
+  background-color: #2a2a2a;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  outline: none;
 }
 
 .action-radio {

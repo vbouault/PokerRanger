@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRangeManager } from '../../hooks/useRangeManager';
 import { POKER_HANDS_GRID, DEFAULT_COLORS, Action, Range } from '../../types/range';
+import { databaseService } from '../../services/indexedDB';
+import ColorPicker from './ColorPicker';
 import './Ranger.css';
 
 interface RangerProps {
@@ -29,6 +31,12 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
   const [newActionName, setNewActionName] = useState('');
   const [newActionColor, setNewActionColor] = useState<string>(DEFAULT_COLORS[0]);
   const [isDragging, setIsDragging] = useState(false);
+  const [editingActionId, setEditingActionId] = useState<number | null>(null);
+  const [editingActionName, setEditingActionName] = useState('');
+  const [editingActionColorId, setEditingActionColorId] = useState<number | null>(null);
+  const [editingActionColor, setEditingActionColor] = useState<string>('');
+  const [colorPickerReloadTrigger, setColorPickerReloadTrigger] = useState(0);
+  const [colorPickerPosition, setColorPickerPosition] = useState<{ top: number; left: number } | null>(null);
 
   // Synchroniser le range sélectionné depuis le gestionnaire de fichiers
   useEffect(() => {
@@ -50,6 +58,25 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
       };
     }
   }, [isDragging]);
+
+  // Fermer l'édition de couleur en cliquant en dehors
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (editingActionColorId !== null && !target.closest('.action-color-editing') && !target.closest('.action-color')) {
+        setEditingActionColorId(null);
+        setEditingActionColor('');
+        setColorPickerPosition(null);
+      }
+    };
+
+    if (editingActionColorId !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [editingActionColorId]);
 
   if (isLoading) {
     return (
@@ -89,12 +116,103 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
     }
   };
 
-  const handleAddAction = () => {
+  const handleAddAction = async () => {
     if (!currentRange || !newActionName.trim()) return;
     
-    createAction(currentRange.id, newActionName.trim(), newActionColor);
+    await createAction(currentRange.id, newActionName.trim(), newActionColor);
+    // Sauvegarder la couleur récente dans IndexedDB
+    try {
+      await databaseService.addRecentColor(newActionColor);
+      await databaseService.cleanupRecentColors(10);
+      setColorPickerReloadTrigger(prev => prev + 1); // Forcer le rechargement des couleurs récentes
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde de la couleur récente:', error);
+    }
     setNewActionName('');
     setIsAddingAction(false);
+  };
+
+  const handleStartEditing = (action: Action) => {
+    setEditingActionId(action.id);
+    setEditingActionName(action.name);
+  };
+
+  const handleSaveEditing = async (actionId: number) => {
+    const action = actions.find(a => a.id === actionId);
+    if (!action || !editingActionName.trim()) {
+      setEditingActionId(null);
+      return;
+    }
+    
+    await updateAction(actionId, editingActionName.trim(), action.color);
+    setEditingActionId(null);
+    setEditingActionName('');
+  };
+
+  const handleCancelEditing = () => {
+    setEditingActionId(null);
+    setEditingActionName('');
+  };
+
+  const handleStartEditingColor = (action: Action, event: React.MouseEvent<HTMLDivElement>) => {
+    setEditingActionColorId(action.id);
+    setEditingActionColor(action.color);
+    
+    // Calculer la position du color picker pour qu'il soit visible
+    const target = event.currentTarget;
+    const rect = target.getBoundingClientRect();
+    const actionsPanel = target.closest('.actions-panel');
+    const actionsPanelRect = actionsPanel?.getBoundingClientRect();
+    
+    // Positionner le color picker en dessous de l'élément, mais s'assurer qu'il reste visible
+    let top = rect.bottom + 10;
+    let left = rect.left;
+    
+    // Si le color picker dépasse en bas, le positionner au-dessus
+    const colorPickerHeight = 350; // Hauteur approximative du color picker
+    if (top + colorPickerHeight > window.innerHeight) {
+      top = rect.top - colorPickerHeight - 10;
+    }
+    
+    // Si le color picker dépasse à droite, l'aligner à droite de l'élément
+    const colorPickerWidth = 320;
+    if (left + colorPickerWidth > window.innerWidth) {
+      left = window.innerWidth - colorPickerWidth - 10;
+    }
+    
+    // S'assurer que le color picker ne dépasse pas à gauche
+    if (left < 10) {
+      left = 10;
+    }
+    
+    setColorPickerPosition({ top, left });
+  };
+
+  const handleSaveColorEditing = async (actionId: number) => {
+    const action = actions.find(a => a.id === actionId);
+    if (!action) {
+      setEditingActionColorId(null);
+      return;
+    }
+    
+    await updateAction(actionId, action.name, editingActionColor);
+    // Sauvegarder la couleur récente dans IndexedDB
+    try {
+      await databaseService.addRecentColor(editingActionColor);
+      await databaseService.cleanupRecentColors(10);
+      setColorPickerReloadTrigger(prev => prev + 1); // Forcer le rechargement des couleurs récentes
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde de la couleur récente:', error);
+    }
+    setEditingActionColorId(null);
+    setEditingActionColor('');
+    setColorPickerPosition(null);
+  };
+
+  const handleCancelColorEditing = () => {
+    setEditingActionColorId(null);
+    setEditingActionColor('');
+    setColorPickerPosition(null);
   };
 
   const stats = getRangeStats();
@@ -156,22 +274,101 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
                 <div
                   key={action.id}
                   className={`action-item ${selectedAction?.id === action.id ? 'active' : ''}`}
-                  onClick={() => setSelectedAction(selectedAction?.id === action.id ? null : action)}
+                  onClick={() => {
+                    if (editingActionId !== action.id) {
+                      setSelectedAction(selectedAction?.id === action.id ? null : action);
+                    }
+                  }}
                 >
                   <div
                     className={`action-radio ${selectedAction?.id === action.id ? 'selected' : ''}`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedAction(selectedAction?.id === action.id ? null : action);
+                      if (editingActionId !== action.id) {
+                        setSelectedAction(selectedAction?.id === action.id ? null : action);
+                      }
                     }}
                   />
-                  <div
-                    className="action-color"
-                    style={{ backgroundColor: action.color }}
-                  />
-                  <span className="action-name">{action.name}</span>
+                  {editingActionColorId === action.id && colorPickerPosition ? (
+                    <>
+                      <div 
+                        className="action-color-editing" 
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          position: 'fixed',
+                          top: `${colorPickerPosition.top}px`,
+                          left: `${colorPickerPosition.left}px`,
+                          zIndex: 10000
+                        }}
+                      >
+                        <ColorPicker
+                          color={editingActionColor}
+                          onChange={setEditingActionColor}
+                          reloadTrigger={colorPickerReloadTrigger}
+                        />
+                        <div className="color-edit-buttons">
+                          <button
+                            className="btn-color-save"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSaveColorEditing(action.id);
+                            }}
+                          >
+                            ✓
+                          </button>
+                          <button
+                            className="btn-color-cancel"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCancelColorEditing();
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div
+                      className="action-color"
+                      style={{ backgroundColor: action.color }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartEditingColor(action, e);
+                      }}
+                      title="Cliquer pour modifier la couleur"
+                    />
+                  )}
+                  {editingActionId === action.id ? (
+                    <input
+                      type="text"
+                      value={editingActionName}
+                      onChange={(e) => setEditingActionName(e.target.value)}
+                      onBlur={() => handleSaveEditing(action.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSaveEditing(action.id);
+                        } else if (e.key === 'Escape') {
+                          handleCancelEditing();
+                        }
+                      }}
+                      className="action-name-input-edit"
+                      autoFocus
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <span 
+                      className="action-name"
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        handleStartEditing(action);
+                      }}
+                    >
+                      {action.name}
+                    </span>
+                  )}
                   <div className="action-controls">
-                    <span className="action-drag">⋮⋮</span>
+                    {/* <span className="action-drag">⋮⋮</span> */}
                     <button
                       className="action-delete"
                       onClick={(e) => {
@@ -179,6 +376,12 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
                         deleteAction(action.id);
                         if (selectedAction?.id === action.id) {
                           setSelectedAction(null);
+                        }
+                        if (editingActionId === action.id) {
+                          handleCancelEditing();
+                        }
+                        if (editingActionColorId === action.id) {
+                          handleCancelColorEditing();
                         }
                       }}
                     >
@@ -199,16 +402,11 @@ const Ranger: React.FC<RangerProps> = ({ selectedRange }) => {
                   onChange={(e) => setNewActionName(e.target.value)}
                   className="action-name-input"
                 />
-                <div className="color-picker">
-                  {DEFAULT_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      className={`color-option ${newActionColor === color ? 'selected' : ''}`}
-                      style={{ backgroundColor: color }}
-                      onClick={() => setNewActionColor(color)}
-                    />
-                  ))}
-                </div>
+                <ColorPicker
+                  color={newActionColor}
+                  onChange={setNewActionColor}
+                  reloadTrigger={colorPickerReloadTrigger}
+                />
                 <div className="form-buttons">
                   <button onClick={handleAddAction} className="btn-primary">
                     Ajouter

@@ -1,14 +1,17 @@
-import { Folder, Range, Action, RangeHand } from '../types/range';
+import { Folder, Range, Action, RangeHand, DEFAULT_COLORS } from '../types/range';
 import { SavedReplay } from '../types/poker';
 
 export class IndexedDBService {
   private dbName = 'RangerDB';
-  private version = 3; // Incrémenté pour ajouter le store replays
+  private version = 4; // Incrémenté pour ajouter le store recentColors
   private db: IDBDatabase | null = null;
 
   async initialize(): Promise<void> {
     try {
       this.db = await this.openDatabase();
+      
+      // Migrer les couleurs par défaut vers IndexedDB si aucune couleur récente n'existe
+      await this.migrateDefaultColors();
       
       console.log('Base de données IndexedDB initialisée avec succès');
     } catch (error) {
@@ -26,6 +29,7 @@ export class IndexedDBService {
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
+        const oldVersion = event.oldVersion;
         
         // Créer le store pour les dossiers
         if (!db.objectStoreNames.contains('folders')) {
@@ -56,6 +60,12 @@ export class IndexedDBService {
           const replaysStore = db.createObjectStore('replays', { keyPath: 'id', autoIncrement: true });
           replaysStore.createIndex('createdAt', 'createdAt', { unique: false });
           replaysStore.createIndex('label', 'label', { unique: false });
+        }
+
+        // Créer le store pour les couleurs récentes (version 4)
+        if (oldVersion < 4 && !db.objectStoreNames.contains('recentColors')) {
+          const recentColorsStore = db.createObjectStore('recentColors', { keyPath: 'color' });
+          recentColorsStore.createIndex('lastUsed', 'lastUsed', { unique: false });
         }
       };
     });
@@ -1183,6 +1193,148 @@ export class IndexedDBService {
       };
       getRequest.onerror = () => reject(getRequest.error);
     });
+  }
+
+  // ================== Méthodes pour les couleurs récentes ==================
+
+  /**
+   * Récupère les couleurs récentes (limité à MAX_RECENT_COLORS)
+   */
+  async getRecentColors(maxColors: number = 10): Promise<string[]> {
+    if (!this.db) throw new Error('Base de données non initialisée');
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['recentColors'], 'readonly');
+      const store = transaction.objectStore('recentColors');
+      const index = store.index('lastUsed');
+      
+      // Trier par date décroissante (plus récent en premier)
+      const request = index.openCursor(null, 'prev');
+      const colors: string[] = [];
+      
+      request.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor && colors.length < maxColors) {
+          colors.push(cursor.value.color);
+          cursor.continue();
+        } else {
+          resolve(colors);
+        }
+      };
+
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * Ajoute ou met à jour une couleur récente
+   */
+  async addRecentColor(color: string): Promise<void> {
+    if (!this.db) throw new Error('Base de données non initialisée');
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['recentColors'], 'readwrite');
+      const store = transaction.objectStore('recentColors');
+      
+      const colorData = {
+        color,
+        lastUsed: new Date().toISOString()
+      };
+
+      const request = store.put(colorData);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * Supprime les couleurs récentes au-delà de la limite
+   */
+  async cleanupRecentColors(maxColors: number = 10): Promise<void> {
+    if (!this.db) throw new Error('Base de données non initialisée');
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['recentColors'], 'readwrite');
+      const store = transaction.objectStore('recentColors');
+      const index = store.index('lastUsed');
+      
+      // Trier par date décroissante
+      const request = index.openCursor(null, 'prev');
+      const colors: Array<{ color: string; lastUsed: string }> = [];
+      
+      request.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor) {
+          colors.push(cursor.value);
+          cursor.continue();
+        } else {
+          // Supprimer les couleurs au-delà de la limite
+          if (colors.length > maxColors) {
+            const colorsToDelete = colors.slice(maxColors);
+            colorsToDelete.forEach(colorData => {
+              store.delete(colorData.color);
+            });
+          }
+          resolve();
+        }
+      };
+
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * Supprime une couleur récente spécifique
+   */
+  async removeRecentColor(color: string): Promise<void> {
+    if (!this.db) throw new Error('Base de données non initialisée');
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['recentColors'], 'readwrite');
+      const store = transaction.objectStore('recentColors');
+      
+      const request = store.delete(color);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * Migre les couleurs par défaut vers IndexedDB comme couleurs récentes initiales
+   */
+  async migrateDefaultColors(): Promise<void> {
+    if (!this.db) throw new Error('Base de données non initialisée');
+
+    try {
+      // Vérifier si des couleurs récentes existent déjà
+      const existingColors = await this.getRecentColors(1);
+      if (existingColors.length > 0) {
+        // Des couleurs existent déjà, pas besoin de migrer
+        return;
+      }
+
+      // Migrer les couleurs par défaut vers IndexedDB
+      const now = new Date();
+      for (let i = 0; i < DEFAULT_COLORS.length; i++) {
+        const color = DEFAULT_COLORS[i];
+        // Utiliser une date décroissante pour préserver l'ordre
+        const date = new Date(now.getTime() - i * 1000).toISOString();
+        const colorData = {
+          color,
+          lastUsed: date
+        };
+        
+        await new Promise<void>((resolve, reject) => {
+          const transaction = this.db!.transaction(['recentColors'], 'readwrite');
+          const store = transaction.objectStore('recentColors');
+          const request = store.put(colorData);
+          request.onsuccess = () => resolve();
+          request.onerror = () => reject(request.error);
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la migration des couleurs par défaut:', error);
+    }
   }
 }
 
